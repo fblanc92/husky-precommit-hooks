@@ -1,0 +1,6 @@
+# Code owners and default reviewers file.
+# These individuals will be automatically requested for review 
+# when someone opens a pull request that modifies code they own.
+
+# Default reviewers for everything in the repo.
+* @fblanc92
