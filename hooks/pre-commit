@@ -1,0 +1,64 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Display a message with colored output
+# Usage: display <color> <message>
+display() {
+  printf "$1$2\e[0m\n"
+}
+
+# Lint the codebase
+lint_code() {
+  echo "Linting files..."
+  if ! npm run lint; then
+    display "\e[31m" "Error: Linting failed."
+    exit 1
+  fi
+  display "\e[32m" "✔︎ Linting passed!"
+}
+
+# Check TypeScript types
+type_check() {
+  echo "Checking types..."
+  if ! npm run type-check; then
+    display "\e[31m" "Error: Type checking failed."
+    exit 1
+  fi
+  display "\e[32m" "✔︎ Type checking passed!"
+}
+
+# Check for large files
+check_large_files() {
+  echo "Checking for large files..."
+  files=$(git diff --cached --name-only | xargs ls -l | awk '$5 > 2000000 {print}')
+  if [ "$files" ]; then
+    display "\e[31m" "Error: Found large files:\n$files"
+    exit 1
+  fi
+  display "\e[32m" "✔︎ No large files found!"
+}
+
+# Format files and check for common staged/unstaged files
+format_files() {
+  echo "Formatting files..."
+  npm run format
+  staged_files=$(git diff --name-only --cached)
+  unstaged_files=$(git diff --name-only)
+  common_files=$(echo "$staged_files" "$unstaged_files" | tr ' ' '\n' | sort | uniq -d)
+  if [ -n "$common_files" ]; then
+    display "\e[33m" "Warning: \nThere might be staged files that need to be formatted. If not the case, commit with --no-verify."
+    exit 1
+  fi
+  display "\e[32m" "✔︎ Staged files formatted."
+}
+
+# Main script execution
+echo "Running pre-commit hooks..."
+
+lint_code
+type_check
+run_tests 
+check_large_files
+format_files
+
+display "\e[32m" "✔︎ All hooks passed!"
